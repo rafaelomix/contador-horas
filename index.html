@@ -39,11 +39,26 @@ input,textarea{width:100%;font:inherit;padding:9px;border:1px solid var(--bd);bo
 .row{display:flex;gap:8px;flex-wrap:wrap}
 .row button{flex:1}
 #msg{font-size:13px;color:var(--mut);min-height:18px;margin-top:6px}
+.tabs{margin-bottom:12px}.tabs button{padding:10px}
+[hidden]{display:none!important}
+.ym{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.mm{border:1px solid var(--bd);border-radius:12px;padding:8px}
+.mm.cur{border-color:var(--ac)}
+.mh{display:flex;justify-content:space-between;align-items:center;width:100%;border:0;background:transparent;padding:2px 2px 6px;font-weight:600;text-transform:capitalize;color:var(--tx)}
+.mh small{font-weight:600}
+.md{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.md span{font-size:10px;text-align:center;border-radius:4px;padding:3px 0;cursor:pointer}
+.md .p{background:rgba(18,128,92,.22)}.md .n{background:rgba(194,65,12,.25)}
+.li{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;padding:8px 0;border-top:1px solid var(--bd);cursor:pointer}
+.li small{color:var(--mut)}
+.li .c{grid-column:1/-1;font-size:14px}
 </style>
 </head>
 <body>
 <div class="w">
 <h1>🕐 Contador de horas</h1>
+<div class="row tabs"><button id="bm" class="p">Mes</button><button id="ba">Año</button></div>
+<div id="vm">
 
 <div class="card">
   <div class="nav"><button id="prev" aria-label="Mes anterior">‹</button><b id="mes"></b><button id="next" aria-label="Mes siguiente">›</button></div>
@@ -62,6 +77,15 @@ input,textarea{width:100%;font:inherit;padding:9px;border:1px solid var(--bd);bo
   <div class="row" style="margin-top:8px"><button id="borrar">Borrar día</button></div>
 </div>
 
+</div>
+<div id="va" hidden>
+  <div class="card">
+    <div class="nav"><button id="py" aria-label="Año anterior">‹</button><b id="ay"></b><button id="ny" aria-label="Año siguiente">›</button></div>
+    <div class="ym" id="ym"></div>
+    <div class="res" style="margin-top:12px"><span>Balance del año</span><span class="big" id="ty"></span></div>
+  </div>
+  <div class="card"><b>Registros del año</b><div id="lst"></div></div>
+</div>
 <div class="card">
   <b>Exportar a Excel</b>
   <div class="row" style="margin-top:8px"><button class="p" id="xm">Mes actual</button><button class="p" id="xa">Año completo</button></div>
@@ -141,6 +165,40 @@ async function exportar(pref,nombre){
 }
 $("xm").onclick=()=>{const y=cur.getFullYear(),m=String(cur.getMonth()+1).padStart(2,"0");exportar(y+"-"+m,y+"-"+m)};
 $("xa").onclick=()=>{const y=String(cur.getFullYear());exportar(y,y)};
+const MN=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+function show(v){$("vm").hidden=v!=="m";$("va").hidden=v!=="a";$("bm").className=v==="m"?"p":"";$("ba").className=v==="a"?"p":"";if(v==="m")render();else renderYear()}
+function openDay(k){const[a,b]=k.split("-").map(Number);cur=new Date(a,b-1,1);sel=k;show("m");window.scrollTo(0,0)}
+function renderYear(){
+  const y=cur.getFullYear(),box=$("ym");box.innerHTML="";$("ay").textContent=y;let ty=0;
+  for(let m=0;m<12;m++){
+    const pf=y+"-"+String(m+1).padStart(2,"0"),card=document.createElement("div");card.className="mm"+((new Date().getFullYear()===y&&new Date().getMonth()===m)?" cur":"");
+    let tot=0;entries(pf).forEach(k=>{const r=calc(data[k]);if(r&&r.has)tot+=r.e});ty+=tot;
+    const h=document.createElement("button");h.className="mh";
+    h.innerHTML="<span>"+new Date(y,m,1).toLocaleDateString("es-ES",{month:"long"})+"</span><small class='"+(tot>=0?"pos-t":"neg-t")+"'>"+(tot?fmt(tot,1):"")+"</small>";
+    h.onclick=()=>{cur=new Date(y,m,1);if(!sel.startsWith(pf))sel=pf+"-01";show("m")};
+    card.appendChild(h);
+    const g=document.createElement("div");g.className="md";
+    const off=(new Date(y,m,1).getDay()+6)%7,n=new Date(y,m+1,0).getDate();
+    for(let i=0;i<off;i++)g.appendChild(document.createElement("span"));
+    for(let d=1;d<=n;d++){const k=pf+"-"+String(d).padStart(2,"0"),r=calc(data[k]),sp=document.createElement("span");
+      sp.textContent=d;if(r&&r.has)sp.className=r.e>=0?"p":"n";sp.onclick=()=>openDay(k);g.appendChild(sp)}
+    card.appendChild(g);box.appendChild(card);
+  }
+  const t=$("ty");t.textContent=fmt(ty,1)+" h";t.className="big "+(ty>=0?"pos-t":"neg-t");
+  const L=$("lst");L.innerHTML="";const ks=entries(String(y));
+  if(!ks.length){L.innerHTML="<div style='color:var(--mut);margin-top:8px'>Sin registros este año.</div>";return}
+  ks.forEach(k=>{const o=data[k],r=calc(o)||{t:0,e:0,has:false},[a,b,c]=k.split("-").map(Number);
+    const li=document.createElement("div");li.className="li";
+    const f=document.createElement("b");f.textContent=new Date(a,b-1,c).toLocaleDateString("es-ES",{weekday:"short",day:"numeric",month:"short"});
+    const mid=document.createElement("small");mid.textContent=[o.m1&&o.m2?o.m1+"–"+o.m2:"",o.t1&&o.t2?o.t1+"–"+o.t2:""].filter(Boolean).join(" · ");
+    const ex=document.createElement("b");ex.textContent=r.has?fmt(r.e,1):"";ex.className=r.e>=0?"pos-t":"neg-t";
+    li.append(f,mid,ex);
+    if(o.c){const cm=document.createElement("div");cm.className="c";cm.textContent=o.c;li.appendChild(cm)}
+    li.onclick=()=>openDay(k);L.appendChild(li)});
+}
+$("bm").onclick=()=>show("m");$("ba").onclick=()=>show("a");
+$("py").onclick=()=>{cur.setFullYear(cur.getFullYear()-1);renderYear()};
+$("ny").onclick=()=>{cur.setFullYear(cur.getFullYear()+1);renderYear()};
 render();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
