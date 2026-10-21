@@ -32,7 +32,7 @@ button.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 .d.pos small{color:var(--ok)}.d.neg small{color:var(--bad)}
 .r{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
 label{font-size:13px;color:var(--mut);display:block}
-input,textarea{width:100%;font:inherit;padding:9px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx)}
+input,textarea,select{width:100%;font:inherit;padding:9px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx)}
 .res{display:flex;justify-content:space-between;gap:8px;margin:8px 0;font-size:15px}
 .big{font-size:22px;font-weight:700}
 .pos-t{color:var(--ok)}.neg-t{color:var(--bad)}
@@ -52,9 +52,22 @@ input,textarea{width:100%;font:inherit;padding:9px;border:1px solid var(--bd);bo
 .li{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;padding:8px 0;border-top:1px solid var(--bd);cursor:pointer}
 .li small{color:var(--mut)}
 .li .c{grid-column:1/-1;font-size:14px}
+body{padding-left:calc(44px + env(safe-area-inset-left,0px))}
+#dim{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:50}
+#br{position:fixed;left:0;top:0;bottom:0;width:calc(44px + env(safe-area-inset-left,0px));z-index:60;touch-action:none;display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:20px;user-select:none;-webkit-user-select:none}
+#bv{position:fixed;left:56px;top:50%;transform:translateY(-50%);background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:6px 10px;z-index:70;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none}
+@media (orientation:landscape){.w{max-width:960px}#vm{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}#vm .card{margin-bottom:0}}
+.d.fe{background:rgba(220,38,38,.15);border-color:rgba(220,38,38,.55)}.d.fe small{color:#dc2626}
+.d.va{background:rgba(14,165,233,.15);border-color:rgba(14,165,233,.55)}.d.va small{color:#0ea5e9}
+.d.nl{opacity:.55}
+.md .fe{background:rgba(220,38,38,.4)}.md .va{background:rgba(14,165,233,.4)}
+.sub{font-size:13px;color:var(--mut);margin-top:2px}
+details summary{cursor:pointer}
+.ck{display:flex;gap:4px;align-items:center;font-size:14px;color:var(--tx)}.ck input{width:auto}
 </style>
 </head>
 <body>
+<div id="dim"></div><div id="br" aria-label="Brillo: desliza arriba o abajo">☀</div><div id="bv"></div>
 <div class="w">
 <h1>🕐 Contador de horas</h1>
 <div class="row tabs"><button id="bm" class="p">Mes</button><button id="ba">Año</button></div>
@@ -64,6 +77,7 @@ input,textarea{width:100%;font:inherit;padding:9px;border:1px solid var(--bd);bo
   <div class="nav"><button id="prev" aria-label="Mes anterior">‹</button><b id="mes"></b><button id="next" aria-label="Mes siguiente">›</button></div>
   <div class="g" id="cal"></div>
   <div class="res" style="margin-top:12px"><span>Balance del mes</span><span class="big" id="tm"></span></div>
+  <div class="res"><span>Laborables</span><b id="lm"></b></div>
 </div>
 
 <div class="card">
@@ -72,6 +86,7 @@ input,textarea{width:100%;font:inherit;padding:9px;border:1px solid var(--bd);bo
   <div class="r"><div><label>Tarde: entrada</label><input type="time" id="t1"></div><div><label>Tarde: salida</label><input type="time" id="t2"></div></div>
   <div class="res"><span>Total trabajado</span><b id="tt"></b></div>
   <div class="res"><span id="el">Horas extra</span><span class="big" id="te"></span></div>
+  <div class="r"><div><label>Tipo de día</label><select id="tp"><option value="">Normal</option><option value="f">Festivo</option><option value="v">Vacaciones</option></select></div><div id="nw" hidden><label>Nombre del festivo</label><input id="nm"></div></div>
   <label>Comentario del día</label>
   <textarea id="c" rows="3" placeholder="Trabajos realizados…"></textarea>
   <div class="row" style="margin-top:8px"><button id="borrar">Borrar día</button></div>
@@ -83,9 +98,22 @@ input,textarea{width:100%;font:inherit;padding:9px;border:1px solid var(--bd);bo
     <div class="nav"><button id="py" aria-label="Año anterior">‹</button><b id="ay"></b><button id="ny" aria-label="Año siguiente">›</button></div>
     <div class="ym" id="ym"></div>
     <div class="res" style="margin-top:12px"><span>Balance del año</span><span class="big" id="ty"></span></div>
+    <div class="res"><span>Laborables</span><b id="ly"></b></div>
   </div>
   <div class="card"><b>Registros del año</b><div id="lst"></div></div>
+  <div class="card"><b>Festivos y vacaciones</b>
+    <div class="r"><div><label>Desde</label><input type="date" id="nf"></div><div><label>Hasta (opcional)</label><input type="date" id="nh"></div></div>
+    <label>Nombre (festivo)</label><input id="nn" placeholder="Ej. Navidad">
+    <div class="row" style="margin-top:8px"><button class="p" id="af">Añadir festivo</button><button id="av">Añadir vacaciones</button></div>
+    <div class="row" style="margin-top:8px"><button id="f26">Cargar los festivos de 2026</button></div>
+    <div id="fl"></div></div>
 </div>
+<details class="card" id="aj"><summary><b>Ajustes</b></summary>
+  <div class="r"><div><label>Jornada diaria (horas)</label><input type="number" id="cj" min="0" max="24" step="0.25"></div><div></div></div>
+  <label>Días laborables</label><div class="row" id="cd" style="margin-bottom:8px"></div>
+  <label>Horario por defecto (mañana / tarde)</label>
+  <div class="r"><input type="time" id="h0"><input type="time" id="h1"></div><div class="r"><input type="time" id="h2"><input type="time" id="h3"></div>
+</details>
 <div class="card">
   <b>Exportar a Excel</b>
   <div class="row" style="margin-top:8px"><button class="p" id="xm">Mes actual</button><button class="p" id="xa">Año completo</button></div>
@@ -94,7 +122,18 @@ input,textarea{width:100%;font:inherit;padding:9px;border:1px solid var(--bd);bo
 </div>
 
 <script>
-const JORNADA=480, K="contador-horas-v1", DEF={m1:"08:00",m2:"13:00",t1:"15:00",t2:"18:00",c:""};
+const K="contador-horas-v1",p2=x=>String(x).padStart(2,"0");
+function fest26(){const r={};[["01-01","Año Nuevo"],["01-06","Reyes"],["03-19",""],["04-02","Jueves Santo"],["04-03","Viernes Santo"],["04-06","Lunes de Pascua"],["05-01","Día del Trabajo"],["07-07",""],["08-15","Asunción"],["10-12","Fiesta Nacional"],["11-02",""],["11-30",""],["12-03",""],["12-08","Inmaculada Concepción"],["12-25","Navidad"]].forEach(([d,n])=>{r["2026-"+d]={t:"f",n}});return r}
+let cfg={j:8,d:[1,1,1,1,1,0,0],h:["08:00","13:00","15:00","18:00"]},mk={};
+try{Object.assign(cfg,JSON.parse(localStorage.getItem("contador-cfg-v1")||"{}"));const rm=localStorage.getItem("contador-marcas-v1");mk=rm?JSON.parse(rm):fest26()}catch(e){if(!Object.keys(mk).length)mk=fest26()}
+function saveCfg(){try{localStorage.setItem("contador-cfg-v1",JSON.stringify(cfg))}catch(e){}}
+function saveMk(){try{localStorage.setItem("contador-marcas-v1",JSON.stringify(mk))}catch(e){}}
+function dow(k){const[a,b,c]=k.split("-").map(Number);return(new Date(a,b-1,c).getDay()+6)%7}
+function lab(k){return !!cfg.d[dow(k)]&&!mk[k]}
+function exp(k){return lab(k)?Math.round(cfg.j*60):0}
+function defd(k){return lab(k)?{m1:cfg.h[0],m2:cfg.h[1],t1:cfg.h[2],t2:cfg.h[3],c:""}:{m1:"",m2:"",t1:"",t2:"",c:""}}
+function stats(y,m){let l=0,f=0,v=0;(m==null?[0,1,2,3,4,5,6,7,8,9,10,11]:[m]).forEach(mm=>{const n=new Date(y,mm+1,0).getDate();for(let d=1;d<=n;d++){const k=y+"-"+p2(mm+1)+"-"+p2(d);if(lab(k))l++;else if(mk[k]&&cfg.d[dow(k)]){mk[k].t==="f"?f++:v++}}});return{l,f,v}}
+function stx(st){return st.l+" días · "+Math.round(st.l*cfg.j*100)/100+" h"+(st.f||st.v?" (festivos "+st.f+", vacaciones "+st.v+")":"")}
 let data={}, sel=iso(new Date()), cur=new Date(); cur.setDate(1);
 try{data=JSON.parse(localStorage.getItem(K)||"{}")}catch(e){data={}}
 const $=id=>document.getElementById(id);
@@ -102,7 +141,7 @@ function iso(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"
 function save(){try{localStorage.setItem(K,JSON.stringify(data))}catch(e){}}
 function mn(s){if(!s)return null;const[a,b]=s.split(":").map(Number);return a*60+b}
 function seg(a,b){a=mn(a);b=mn(b);return(a!=null&&b!=null&&b>a)?b-a:0}
-function calc(o){if(!o)return null;const t=seg(o.m1,o.m2)+seg(o.t1,o.t2);if(!t&&!o.c)return null;return{t,e:t?t-JORNADA:0,has:!!t}}
+function calc(o,k){if(!o)return null;const t=seg(o.m1,o.m2)+seg(o.t1,o.t2);if(!t&&!o.c)return null;return{t,e:t?t-exp(k):0,has:!!t}}
 function fmt(m,sg){const s=m<0?"−":(sg&&m>0?"+":"");m=Math.abs(m);return s+Math.floor(m/60)+":"+String(m%60).padStart(2,"0")}
 function entries(pref){return Object.keys(data).filter(k=>k.startsWith(pref)).sort()}
 function render(keep){
@@ -113,20 +152,20 @@ function render(keep){
   const off=(new Date(y,mo,1).getDay()+6)%7, n=new Date(y,mo+1,0).getDate(), hoy=iso(new Date());
   for(let i=0;i<off;i++)cal.appendChild(document.createElement("div"));
   for(let d=1;d<=n;d++){
-    const k=iso(new Date(y,mo,d)),r=calc(data[k]),b=document.createElement("button");
-    b.className="d"+(k===sel?" sel":"")+(k===hoy?" hoy":"")+(r&&r.has?(r.e>=0?" pos":" neg"):"");
-    b.innerHTML="<span>"+d+"</span><small>"+(r&&r.has?fmt(r.e,1):"&nbsp;")+"</small>";
+    const k=iso(new Date(y,mo,d)),r=calc(data[k],k),b=document.createElement("button");
+    b.className="d"+(k===sel?" sel":"")+(k===hoy?" hoy":"")+(r&&r.has?(r.e>=0?" pos":" neg"):"")+(mk[k]?(mk[k].t==="f"?" fe":" va"):(cfg.d[dow(k)]?"":" nl"));
+    b.innerHTML="<span>"+d+"</span><small>"+(r&&r.has?fmt(r.e,1):(mk[k]?(mk[k].t==="f"?"F":"V"):"&nbsp;"))+"</small>";
     b.onclick=()=>{sel=k;render()};cal.appendChild(b);
   }
-  let tot=0;entries(y+"-"+String(mo+1).padStart(2,"0")).forEach(k=>{const r=calc(data[k]);if(r&&r.has)tot+=r.e});
-  const tm=$("tm");tm.textContent=fmt(tot,1)+" h";tm.className="big "+(tot>=0?"pos-t":"neg-t");
+  let tot=0;entries(y+"-"+String(mo+1).padStart(2,"0")).forEach(k=>{const r=calc(data[k],k);if(r&&r.has)tot+=r.e});
+  $("lm").textContent=stx(stats(y,mo));const tm=$("tm");tm.textContent=fmt(tot,1)+" h";tm.className="big "+(tot>=0?"pos-t":"neg-t");
   const [sy,sm,sd]=sel.split("-").map(Number);
   $("fd").textContent=new Date(sy,sm-1,sd).toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});
-  if(!keep){const o=data[sel]||DEF;["m1","m2","t1","t2"].forEach(f=>$(f).value=o[f]||"");$("c").value=o.c||""}
+  if(!keep){const q=mk[sel]||{};$("tp").value=q.t||"";$("nm").value=q.n||"";$("nw").hidden=q.t!=="f";const o=data[sel]||defd(sel);["m1","m2","t1","t2"].forEach(f=>$(f).value=o[f]||"");$("c").value=o.c||""}
   upd();
 }
 function upd(){
-  const t=seg($("m1").value,$("m2").value)+seg($("t1").value,$("t2").value), e=t-JORNADA;
+  const t=seg($("m1").value,$("m2").value)+seg($("t1").value,$("t2").value), e=t-exp(sel);
   $("tt").textContent=fmt(t)+" h";
   const el=$("te");
   if(!t){el.textContent="—";el.className="big";$("el").textContent="Horas extra";return}
@@ -145,15 +184,17 @@ $("prev").onclick=()=>{cur.setMonth(cur.getMonth()-1);render()};
 $("next").onclick=()=>{cur.setMonth(cur.getMonth()+1);render()};
 
 async function exportar(pref,nombre){
-  const msg=$("msg"),ks=entries(pref);
+  const msg=$("msg"),ks=[...new Set([...entries(pref),...Object.keys(mk).filter(k=>k.startsWith(pref))])].sort();
   if(!ks.length){msg.textContent="No hay datos en ese periodo.";return}
-  const rows=[["Fecha","Entrada mañana","Salida mañana","Entrada tarde","Salida tarde","Total (h:mm)","Extra (h:mm)","Extra (horas)","Comentario"]];
+  const rows=[["Fecha","Entrada mañana","Salida mañana","Entrada tarde","Salida tarde","Total (h:mm)","Extra (h:mm)","Extra (horas)","Comentario","Tipo"]];
   let tot=0;
-  ks.forEach(k=>{const o=data[k],r=calc(o)||{t:0,e:0,has:false};if(r.has)tot+=r.e;
-    rows.push([k.split("-").reverse().join("/"),o.m1||"",o.m2||"",o.t1||"",o.t2||"",r.has?fmt(r.t):"",r.has?fmt(r.e,1):"",r.has?Math.round(r.e/60*100)/100:"",o.c||""])});
+  ks.forEach(k=>{const o=data[k]||{},r=calc(data[k],k)||{t:0,e:0,has:false};if(r.has)tot+=r.e;
+    rows.push([k.split("-").reverse().join("/"),o.m1||"",o.m2||"",o.t1||"",o.t2||"",r.has?fmt(r.t):"",r.has?fmt(r.e,1):"",r.has?Math.round(r.e/60*100)/100:"",o.c||"",mk[k]?(mk[k].t==="f"?"Festivo"+(mk[k].n?": "+mk[k].n:""):"Vacaciones"):""])});
   rows.push([]);rows.push(["TOTAL","","","","","",fmt(tot,1),Math.round(tot/60*100)/100,""]);
+  const st=pref.length===4?stats(+pref):stats(+pref.slice(0,4),+pref.slice(5)-1);
+  rows.push(["Días laborables",st.l]);rows.push(["Horas laborables",Math.round(st.l*cfg.j*100)/100]);rows.push(["Festivos",st.f]);rows.push(["Vacaciones",st.v]);
   try{
-    const ws=XLSX.utils.aoa_to_sheet(rows);ws["!cols"]=[{wch:11},{wch:14},{wch:13},{wch:13},{wch:12},{wch:12},{wch:12},{wch:12},{wch:50}];
+    const ws=XLSX.utils.aoa_to_sheet(rows);ws["!cols"]=[{wch:11},{wch:14},{wch:13},{wch:13},{wch:12},{wch:12},{wch:12},{wch:12},{wch:50},{wch:30}];
     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Horas");
     const buf=XLSX.write(wb,{type:"array",bookType:"xlsx"});
     const fn="horas-"+nombre+".xlsx";
@@ -172,7 +213,7 @@ function renderYear(){
   const y=cur.getFullYear(),box=$("ym");box.innerHTML="";$("ay").textContent=y;let ty=0;
   for(let m=0;m<12;m++){
     const pf=y+"-"+String(m+1).padStart(2,"0"),card=document.createElement("div");card.className="mm"+((new Date().getFullYear()===y&&new Date().getMonth()===m)?" cur":"");
-    let tot=0;entries(pf).forEach(k=>{const r=calc(data[k]);if(r&&r.has)tot+=r.e});ty+=tot;
+    let tot=0;entries(pf).forEach(k=>{const r=calc(data[k],k);if(r&&r.has)tot+=r.e});ty+=tot;
     const h=document.createElement("button");h.className="mh";
     h.innerHTML="<span>"+new Date(y,m,1).toLocaleDateString("es-ES",{month:"long"})+"</span><small class='"+(tot>=0?"pos-t":"neg-t")+"'>"+(tot?fmt(tot,1):"")+"</small>";
     h.onclick=()=>{cur=new Date(y,m,1);if(!sel.startsWith(pf))sel=pf+"-01";show("m")};
@@ -180,11 +221,17 @@ function renderYear(){
     const g=document.createElement("div");g.className="md";
     const off=(new Date(y,m,1).getDay()+6)%7,n=new Date(y,m+1,0).getDate();
     for(let i=0;i<off;i++)g.appendChild(document.createElement("span"));
-    for(let d=1;d<=n;d++){const k=pf+"-"+String(d).padStart(2,"0"),r=calc(data[k]),sp=document.createElement("span");
-      sp.textContent=d;if(r&&r.has)sp.className=r.e>=0?"p":"n";sp.onclick=()=>openDay(k);g.appendChild(sp)}
+    for(let d=1;d<=n;d++){const k=pf+"-"+String(d).padStart(2,"0"),r=calc(data[k],k),sp=document.createElement("span");
+      sp.textContent=d;if(mk[k])sp.className=mk[k].t==="f"?"fe":"va";else if(r&&r.has)sp.className=r.e>=0?"p":"n";sp.onclick=()=>openDay(k);g.appendChild(sp)}
     card.appendChild(g);box.appendChild(card);
   }
-  const t=$("ty");t.textContent=fmt(ty,1)+" h";t.className="big "+(ty>=0?"pos-t":"neg-t");
+  $("ly").textContent=stx(stats(y));const t=$("ty");t.textContent=fmt(ty,1)+" h";t.className="big "+(ty>=0?"pos-t":"neg-t");
+  const F=$("fl");F.innerHTML="";
+  Object.keys(mk).filter(k=>k.startsWith(y+"-")).sort().forEach(k=>{const[a,b,c]=k.split("-").map(Number),li=document.createElement("div");li.className="li";
+    const f=document.createElement("b");f.textContent=new Date(a,b-1,c).toLocaleDateString("es-ES",{weekday:"short",day:"numeric",month:"short"});
+    const mid=document.createElement("small");mid.textContent=mk[k].t==="f"?"Festivo"+(mk[k].n?": "+mk[k].n:""):"Vacaciones";
+    const x=document.createElement("button");x.textContent="✕";x.setAttribute("aria-label","Quitar");x.onclick=ev=>{ev.stopPropagation();delete mk[k];saveMk();renderYear()};
+    li.append(f,mid,x);li.onclick=()=>openDay(k);F.appendChild(li)});
   const L=$("lst");L.innerHTML="";const ks=entries(String(y));
   if(!ks.length){L.innerHTML="<div style='color:var(--mut);margin-top:8px'>Sin registros este año.</div>";return}
   ks.forEach(k=>{const o=data[k],r=calc(o)||{t:0,e:0,has:false},[a,b,c]=k.split("-").map(Number);
@@ -199,6 +246,28 @@ function renderYear(){
 $("bm").onclick=()=>show("m");$("ba").onclick=()=>show("a");
 $("py").onclick=()=>{cur.setFullYear(cur.getFullYear()-1);renderYear()};
 $("ny").onclick=()=>{cur.setFullYear(cur.getFullYear()+1);renderYear()};
+(function(){
+  let lv=1;try{const v=parseFloat(localStorage.getItem("brillo-v1"));if(v>=0.2&&v<=1)lv=v}catch(e){}
+  const dim=$("dim"),bv=$("bv"),br=$("br");let t;
+  function ap(){dim.style.opacity=String((1-lv)*0.8)}
+  function info(){bv.textContent="☀ "+Math.round(lv*100)+"%";bv.style.opacity=1;clearTimeout(t);t=setTimeout(()=>bv.style.opacity=0,900)}
+  let y0=0,l0=1,on=false;
+  br.addEventListener("pointerdown",e=>{on=true;y0=e.clientY;l0=lv;br.setPointerCapture(e.pointerId);info()});
+  br.addEventListener("pointermove",e=>{if(!on)return;lv=Math.min(1,Math.max(0.2,l0+(y0-e.clientY)/(window.innerHeight*0.7)));ap();info()});
+  const end=()=>{if(!on)return;on=false;try{localStorage.setItem("brillo-v1",String(lv))}catch(e){}};
+  br.addEventListener("pointerup",end);br.addEventListener("pointercancel",end);
+  ap();
+})();
+$("tp").onchange=()=>{const t=$("tp").value;if(t)mk[sel]={t,n:t==="f"?$("nm").value.trim():""};else delete mk[sel];saveMk();render()};
+$("nm").addEventListener("input",()=>{if(mk[sel]&&mk[sel].t==="f"){mk[sel].n=$("nm").value.trim();saveMk()}});
+function addMk(t){const a=$("nf").value;if(!a)return;let d=new Date(a+"T00:00"),e=new Date(($("nh").value||a)+"T00:00");if(e<d)e=d;for(let n=0;d<=e&&n<400;d.setDate(d.getDate()+1),n++)mk[iso(d)]={t,n:t==="f"?$("nn").value.trim():""};saveMk();renderYear()}
+$("f26").onclick=()=>{const f=fest26();Object.keys(f).forEach(k=>{if(!mk[k])mk[k]=f[k]});saveMk();renderYear()};
+$("af").onclick=()=>addMk("f");$("av").onclick=()=>addMk("v");
+(function(){
+  const dn="LMXJVSD";$("cj").value=cfg.j;$("cj").oninput=()=>{const v=parseFloat($("cj").value);if(v>=0&&v<=24){cfg.j=v;saveCfg();render()}};
+  dn.split("").forEach((l,i)=>{const lb=document.createElement("label");lb.className="ck";const c=document.createElement("input");c.type="checkbox";c.checked=!!cfg.d[i];c.onchange=()=>{cfg.d[i]=c.checked?1:0;saveCfg();render()};lb.append(c,l);$("cd").appendChild(lb)});
+  [0,1,2,3].forEach(i=>{const e=$("h"+i);e.value=cfg.h[i];e.onchange=()=>{cfg.h[i]=e.value;saveCfg();render()}});
+})();
 render();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
